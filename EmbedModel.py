@@ -6,13 +6,13 @@ from transformers import BertTokenizer, BertConfig, BertModel,\
     DistilBertTokenizer, DistilBertConfig, DistilBertModel, \
     AlbertTokenizer, AlbertConfig, AlbertModel, \
     XLMTokenizer, XLMConfig,  XLMModel, \
-    XLNetTokenizer, XLNetConfig,  XLNetModel
+    XLNetTokenizer, XLNetConfig,  XLNetModel, AutoTokenizer, AutoModel, AutoConfig
 
 def _get_model(model_name):
     if model_name == 'albert':
-        tokenizer = AlbertTokenizer.from_pretrained("albert/albert-base-v2")
-        config = AlbertConfig.from_pretrained("albert/albert-base-v2")
-        model = AlbertModel.from_pretrained("albert/albert-base-v2")
+        tokenizer = AutoTokenizer.from_pretrained("albert/albert-base-v2")
+        config = AutoConfig.from_pretrained("albert/albert-base-v2")
+        model = AutoModel.from_pretrained("albert/albert-base-v2")
         dim = config.hidden_size
     elif model_name == 'bert':
         tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
@@ -20,9 +20,9 @@ def _get_model(model_name):
         model = BertModel.from_pretrained('bert-base-uncased', config=config)
         dim = config.hidden_size
     elif model_name == 'xlnet':
-        tokenizer = XLNetTokenizer.from_pretrained("xlnet/xlnet-base-cased")
-        config = XLNetConfig.from_pretrained("xlnet/xlnet-base-cased")
-        model = XLNetModel.from_pretrained("xlnet/xlnet-base-cased", config=config)
+        tokenizer = AutoTokenizer.from_pretrained("xlnet/xlnet-base-cased")
+        config = AutoConfig.from_pretrained("xlnet/xlnet-base-cased")
+        model = AutoModel.from_pretrained("xlnet/xlnet-base-cased", config=config)
         dim = config.d_model
     elif model_name == 'xlm':
         tokenizer = XLMTokenizer.from_pretrained("FacebookAI/xlm-mlm-en-2048")
@@ -55,17 +55,19 @@ class EmbedModel(nn.Module):
             self.device = torch.device("cuda:{:d}".format(device[0]))
         else:
             self.device = device
-        model, self.tokenizer, self.config, self.dim = _get_model(lm)
+
+        self.lm = lm
+        model, self.tokenizer, self.config, self.dim = _get_model(self.lm)
         #self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
         #self.config = BertConfig.from_pretrained('bert-base-uncased')
-        if lm == 'xlnet' or lm == 'xlm':
+        if self.lm == 'xlnet' or self.lm == 'xlm':
             self.max_token_length = 1000
         else:
             self.max_token_length = self.config.max_position_embeddings
         if torch.cuda.is_available() and type(device)==list:
             self.model = nn.DataParallel(model, device_ids=device)#BertModel.from_pretrained('bert-base-uncased', config=self.config), device_ids=device)
         else:
-            self.model = model #BertModel.from_pretrained('bert-base-uncased', config=self.config)
+            self.model = model.to(device) #BertModel.from_pretrained('bert-base-uncased', config=self.config)
         for param in self.model.parameters():
             param.requires_grad = True
         #self.dim = 768
@@ -134,9 +136,15 @@ class EmbedModel(nn.Module):
         input_masks = torch.Tensor(input_masks).cuda().long()
 
         #_ , pooled_output\
-        output = self.model(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_masks)
-        pooled_output = output.pooler_output
-        features = pooled_output
+        if self.lm == 'distilbert':
+            output = self.model(input_ids=input_ids, attention_mask=input_masks)
+        else:
+            output = self.model(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_masks)
+        if self.lm == 'distilbert' or self.lm == 'xlnet':
+            features = output.last_hidden_state[:,0,:]
+        else:
+            features = output.pooler_output
+        #features = pooled_output
 
         return features
 
