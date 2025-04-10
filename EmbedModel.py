@@ -15,14 +15,16 @@ def _get_model(model_name):
         model = AutoModel.from_pretrained("albert/albert-base-v2")
         dim = config.hidden_size
     elif model_name == 'bert':
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-        config = BertConfig.from_pretrained('bert-base-uncased')
-        model = BertModel.from_pretrained('bert-base-uncased', config=config)
+        model_specification = "google-bert/bert-base-uncased" #'bert-base-uncased'
+        tokenizer = BertTokenizer.from_pretrained(model_specification, do_lower_case=True)
+        config = BertConfig.from_pretrained(model_specification)
+        model = BertModel.from_pretrained(model_specification, config=config)
         dim = config.hidden_size
     elif model_name == 'xlnet':
-        tokenizer = AutoTokenizer.from_pretrained("xlnet/xlnet-base-cased")
-        config = AutoConfig.from_pretrained("xlnet/xlnet-base-cased")
-        model = AutoModel.from_pretrained("xlnet/xlnet-base-cased", config=config)
+        model_specification = "xlnet/xlnet-base-cased"
+        tokenizer = AutoTokenizer.from_pretrained(model_specification)
+        config = AutoConfig.from_pretrained(model_specification)
+        model = AutoModel.from_pretrained(model_specification, config=config)
         dim = config.d_model
     elif model_name == 'xlm':
         tokenizer = XLMTokenizer.from_pretrained("FacebookAI/xlm-mlm-en-2048")
@@ -30,14 +32,16 @@ def _get_model(model_name):
         model = XLMModel.from_pretrained("FacebookAI/xlm-mlm-en-2048", config=config)
         dim = config.emb_dim
     elif model_name == 'roberta':
-        tokenizer = RobertaTokenizer.from_pretrained("FacebookAI/roberta-base")
-        config = RobertaConfig.from_pretrained("FacebookAI/roberta-base")
-        model = RobertaModel.from_pretrained("FacebookAI/roberta-base")
+        model_specification= "cardiffnlp/twitter-roberta-base-2022-154m" #"FacebookAI/roberta-base"
+        tokenizer = RobertaTokenizer.from_pretrained(model_specification)
+        config = RobertaConfig.from_pretrained(model_specification)
+        model = RobertaModel.from_pretrained(model_specification)
         dim = config.hidden_size
     elif model_name == 'distilbert':
-        tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
-        config = DistilBertConfig.from_pretrained("distilbert-base-uncased")
-        model = DistilBertModel.from_pretrained("distilbert-base-uncased")
+        model_specification="distilbert-base-uncased"
+        tokenizer = DistilBertTokenizer.from_pretrained(model_specification)
+        config = DistilBertConfig.from_pretrained(model_specification)
+        model = DistilBertModel.from_pretrained(model_specification)
         dim = config.dim
     else:
         print('No known model')
